@@ -4,7 +4,8 @@ LABEL maintainer "Red Hat OpenShift Dedicated SRE Team"
 RUN microdnf install -y python3 python3-pip make git
 RUN python3 -m pip install pyyaml requests
 
-COPY . ./
+COPY . /app
+WORKDIR /app
 
 RUN make test
 RUN python3 -m pip install .
