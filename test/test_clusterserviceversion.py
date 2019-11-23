@@ -1,15 +1,30 @@
+"""
+Tests the clusterServiceVersion module.
+"""
+
 import unittest
 import yaml
 from operatorcurator import clusterserviceversion as CSV
 
+
 class TestClusterServiceVersion(unittest.TestCase):
+    """
+    Tests for the clusterServiceVersion object.
+    """
+
     def get_test_yaml(self, yaml_file):
-        with open(yaml_file, 'r') as f:
-            test_yaml = yaml.safe_load(f)
+        """
+        Tests loading and returning yaml correctly.
+        """
+        with open(yaml_file, 'r') as yaml_file:
+            test_yaml = yaml.safe_load(yaml_file)
 
         return test_yaml
 
     def test_init(self):
+        """
+        Tests initialization of the object from yaml.
+        """
         test_yaml = self.get_test_yaml(
             "test/data/example_clusterserviceversion.yaml"
         )
@@ -19,6 +34,9 @@ class TestClusterServiceVersion(unittest.TestCase):
         self.assertEqual(test_csv.yaml, test_yaml)
 
     def test_check_for_cluster_permissions_pass(self):
+        """
+        Tests passing results for clusterPermissions checking.
+        """
         test_yaml = self.get_test_yaml(
             "test/data/example_clusterserviceversion.yaml"
         )
@@ -28,6 +46,9 @@ class TestClusterServiceVersion(unittest.TestCase):
         self.assertFalse(test_csv.requires_cluster_permissions)
 
     def test_check_for_cluster_permissions_fail(self):
+        """
+        Tests failing results for clusterPermissions checking.
+        """
         test_yaml = self.get_test_yaml(
             "test/data/example_clusterserviceversion.yaml"
         )
@@ -39,15 +60,17 @@ class TestClusterServiceVersion(unittest.TestCase):
 
         self.assertTrue(test_csv.requires_cluster_permissions)
 
-
     def test_parse_scc_from_rules_fail(self):
+        """
+        Tests failing checks for existence of scc item in a rule.
+        """
         rule = {
             'apiGroups': ['security.openshift.io'],
             'resources': ['securitycontextconstraints'],
             'verbs': ['use']
         }
 
-        self.assertTrue(CSV._parse_scc_from_rules(rule))
+        self.assertTrue(CSV.parse_scc_from_rules(rule))
 
         rule = {
             'apiGroups': ['security.openshift.io'],
@@ -55,7 +78,7 @@ class TestClusterServiceVersion(unittest.TestCase):
             'verbs': ['*']
         }
 
-        self.assertTrue(CSV._parse_scc_from_rules(rule))
+        self.assertTrue(CSV.parse_scc_from_rules(rule))
 
         rule = {
             'apiGroups': ['security.openshift.io'],
@@ -63,7 +86,7 @@ class TestClusterServiceVersion(unittest.TestCase):
             'verbs': ['use', '*']
         }
 
-        self.assertTrue(CSV._parse_scc_from_rules(rule))
+        self.assertTrue(CSV.parse_scc_from_rules(rule))
 
         rule = {
             'apiGroups': ['security.openshift.io'],
@@ -71,7 +94,7 @@ class TestClusterServiceVersion(unittest.TestCase):
             'verbs': ['use', 'get']
         }
 
-        self.assertTrue(CSV._parse_scc_from_rules(rule))
+        self.assertTrue(CSV.parse_scc_from_rules(rule))
 
         rule = {
             'apiGroups': ['security.openshift.io'],
@@ -79,7 +102,7 @@ class TestClusterServiceVersion(unittest.TestCase):
             'verbs': ['get', '*']
         }
 
-        self.assertTrue(CSV._parse_scc_from_rules(rule))
+        self.assertTrue(CSV.parse_scc_from_rules(rule))
 
         rule = {
             'apiGroups': ['security.openshift.io'],
@@ -87,17 +110,19 @@ class TestClusterServiceVersion(unittest.TestCase):
             'verbs': ['use', 'get', '*']
         }
 
-        self.assertTrue(CSV._parse_scc_from_rules(rule))
-
+        self.assertTrue(CSV.parse_scc_from_rules(rule))
 
     def test_parse_scc_from_rules_pass(self):
+        """
+        Tests passing checks for existence of scc item in a rule.
+        """
         rule = {
             'apiGroups': ['security.openshift.io'],
             'resources': ['securitycontextconstraints'],
             'verbs': ['list']
         }
 
-        self.assertFalse(CSV._parse_scc_from_rules(rule))
+        self.assertFalse(CSV.parse_scc_from_rules(rule))
 
         rule = {
             'apiGroups': ['security.openshift.io'],
@@ -105,7 +130,7 @@ class TestClusterServiceVersion(unittest.TestCase):
             'verbs': ['use']
         }
 
-        self.assertFalse(CSV._parse_scc_from_rules(rule))
+        self.assertFalse(CSV.parse_scc_from_rules(rule))
 
         rule = {
             'apiGroups': ['rbac.authorization.k8s.io'],
@@ -113,9 +138,12 @@ class TestClusterServiceVersion(unittest.TestCase):
             'verbs': ['use']
         }
 
-        self.assertFalse(CSV._parse_scc_from_rules(rule))
+        self.assertFalse(CSV.parse_scc_from_rules(rule))
 
     def test_check_for_security_context_constraints_pass(self):
+        """
+        Tests passing results for securityContextConstraints checking.
+        """
         test_yaml = self.get_test_yaml(
             "test/data/example_clusterserviceversion.yaml"
         )
@@ -124,8 +152,10 @@ class TestClusterServiceVersion(unittest.TestCase):
 
         self.assertFalse(test_csv.requires_security_context_constraints)
 
-
     def test_check_for_security_context_constraints_fail(self):
+        """
+        Tests failing results for securityContextConstraints checking.
+        """
         test_yaml = self.get_test_yaml(
             "test/data/example_clusterserviceversion.yaml"
         )
@@ -151,8 +181,10 @@ class TestClusterServiceVersion(unittest.TestCase):
 
         self.assertTrue(test_csv.requires_security_context_constraints)
 
-
     def test_check_for_multinamepsace_install_mode_pass(self):
+        """
+        Tests passing results for multiNamespace installMode lookup checking.
+        """
         test_yaml = self.get_test_yaml(
             "test/data/example_clusterserviceversion.yaml"
         )
@@ -161,8 +193,10 @@ class TestClusterServiceVersion(unittest.TestCase):
 
         self.assertFalse(test_csv.allows_multinamespace_install_mode)
 
-
     def test_check_for_multinamepsace_install_mode_fail(self):
+        """
+        Tests failing results for multiNamespace installMode lookup checking.
+        """
         test_yaml = self.get_test_yaml(
             "test/data/example_clusterserviceversion.yaml"
         )
