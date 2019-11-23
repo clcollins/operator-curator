@@ -10,7 +10,7 @@ from .validate import validate_csv
 LOGGER = logging.getLogger(__name__)
 
 
-def _parse_scc_from_rules(rule):
+def parse_scc_from_rules(rule):
     """
     Checks if securitycontextconstraints exist with use or '*'
     verbs in a clusterServiceVersion permission rule.
@@ -62,7 +62,7 @@ def check_security_context_constraints(csv_yaml):
         for permission in permissions:
             rule = permission['rules'][0]
 
-            if _parse_scc_from_rules(rule):
+            if parse_scc_from_rules(rule):
                 return True
 
     return False
