@@ -1,13 +1,16 @@
-import requests
+"""
+Module for classes representing packages and package releases.
+"""
+
 import logging
 import tarfile
+import requests
 import yaml
-import json
 from .__main__ import ALLOWED_PACKAGES, DENIED_PACKAGES, _url
 from .clusterserviceversion import ClusterServiceVersion
 from .validate import validate_package, validate_pacakge_release
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 def extract_yaml_data(data):
@@ -16,18 +19,17 @@ def extract_yaml_data(data):
     tar archive represented as tarinfo objects.
     """
     with tarfile.open(fileobj=data) as tar:
-        try:
-            yaml_files = [
-                (
-                    {
-                        i.name: tar.extractfile(i).read()
-                    }
-                ) for i in tar if (
-                    i.name.split('.')[-1:].pop() == 'yaml'
-                )
-            ]
-        except Exception as error:
-            print(error)
+        # Should have a try/except block here, but unsure what
+        # exceptions may be raised by this
+        yaml_files = [
+            (
+                {
+                    i.name: tar.extractfile(i).read()
+                }
+            ) for i in tar if (
+                i.name.split('.')[-1:].pop() == 'yaml'
+            )
+        ]
 
     return yaml_files
 
@@ -127,15 +129,11 @@ class Package:
                     }
                 )
 
-
     def validate(self):
         """
         Runs through the list of releases, and gathers the validation
         results.
         """
-
-        pass
-
 
     def check_package_in_allowed_list(self):
         """
@@ -146,7 +144,6 @@ class Package:
 
         return False
 
-
     def check_package_in_denied_list(self):
         """
         Returns true of the package has been listed in the deny list.
@@ -155,18 +152,6 @@ class Package:
             return True
 
         return False
-
-
-    def summarize(self):
-        """
-        Summarizes the results of the validation tests for this operator
-        package.
-        """
-
-        summary = []
-
-
-        return summary
 
 
 class PackageRelease:
@@ -181,7 +166,7 @@ class PackageRelease:
         self.digest = digest
         self.release = release
 
-        logger.debug(f"PackageRelease: {name} - {release}")
+        logging.debug(f"PackageRelease: {name} - {release}")
 
         self.digest_url = _url(
             f"packages/{self.name}/blobs/sha256/{self.digest}"
@@ -220,7 +205,6 @@ class PackageRelease:
         if self.valid:
             self.upload_release()
 
-
     def check_if_already_curated(self):
         """
         Checks the curation data for the parent package to see if this
@@ -229,16 +213,15 @@ class PackageRelease:
         Returns a boolean = True if curated, False if not.
         """
 
-        curated  = [
+        curated = [
             i for i in (
                 self.package.curated_release_data
-             ) if self.release in i.values()
+            ) if self.release in i.values()
         ]
 
         logging.debug(f"Matched curated release data: {curated}")
 
-        return True if curated else False
-
+        return bool(curated)
 
     def download_release(self):
         """
@@ -256,6 +239,7 @@ class PackageRelease:
         if response.ok:
             return response.raw
 
+        return None
 
     def upload_release(self):
         """
@@ -287,22 +271,33 @@ class PackageRelease:
 #            response.raise_for_status()
 #        except requests.exceptions.HTTPError as error:
 #            if response.status_code == 409:
-#                #logging.info(f"Version {version} of {shortname} is already present in {target_namespace} namespace. Skipping...")
+#                #logging.info(
+#                   f"Version {version} of {shortname} is already present"
+#                   f" in {target_namespace} namespace. Skipping..."
+#                 )
 #                # HOW TO LOGGING
 #                pass
 #            else:
-#                #logging.error(f"Failed to upload {shortname} to {target_namespace} namespace. HTTP Error: {error}")
+#                #logging.error(
+#                   f"Failed to upload {shortname} to "
+#                   f"{target_namespace} namespace. HTTP Error: {error}"
+#                 )
 #                pass
 #        except requests.exceptions.ConnectionError as error:
-#            #logging.error(f"Failed to upload {shortname} to {target_namespace} namespace. Connection Error: {error}")
+#                #logging.error(
+#                   f"Failed to upload {shortname} to "
+#                   f"{target_namespace} namespace. Connection Error: {error}"
+#                 )
 #            pass
 #        except requests.exceptions.Timeout as error:
-#            #logging.error(f"Failed to upload {shortname} to {target_namespace} namespace. Timeout Error: {error}")
+#                #logging.error(
+#                   f"Failed to upload {shortname} to "
+#                   f"{target_namespace} namespace. Timeout Error: {error}"
+#                 )
 #            pass
 #
 #        # This is a new package namespace, make it publicly visible
 #        set_repo_visibility(target_namespace, shortname, oauth_token)
-
 
     def init_csvs_from_contents(self):
         """
@@ -311,8 +306,8 @@ class PackageRelease:
         """
         csv_list = []
         for entry in self.contents:
-            for _,v in entry.items():
-                item = yaml.safe_load(v)
+            for _, value in entry.items():
+                item = yaml.safe_load(value)
                 if 'kind' in item.keys():
                     if item['kind'] == 'ClusterServiceVersion':
                         # This is a csv
@@ -334,4 +329,3 @@ class PackageRelease:
                             csv_list.append(ClusterServiceVersion(csv))
 
         return csv_list
-

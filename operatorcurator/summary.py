@@ -1,11 +1,18 @@
+"""
+This module summarizes test results and returns a report to stdout.
+"""
+
 import sys
 
 
 class Summary:
+    """
+    This class represents a summary object that can be
+    used to generate a report.
+    """
 
     def __init__(self):
         self.report = []
-
 
     def summarize(self, out=sys.stdout):
         """
@@ -22,22 +29,30 @@ class Summary:
         passing_count = len(
             [
                 i for i in self.report if {
-                        key:value for (key, value) in i.items() if value["pass"]
+                    key: value for (key, value) in i.items() if (
+                        value["pass"]
+                    )
                 }
             ]
         )
         skipped_count = len(
             [
                 i for i in self.report if {
-                    key:value for (key, value) in i.items() if value["skipped"]
+                    key: value for (key, value) in i.items() if (
+                        value["skipped"]
+                    )
                 }
             ]
         )
 
+        # TODO: This should be replaced with a template of some kind
         for i in self.report:
             for operator, info in i.items():
                 operator_result = "[PASS]" if info["pass"] else "[FAIL]"
-                report.append(f"\n{operator_result} {operator} version {info['version']}")
+                report.append(
+                    f"\n{operator_result} {operator} "
+                    f"version {info['version']}"
+                )
                 for name, result in info["tests"].items():
                     test_result = (
                         "[SKIP]" if info["skipped"] else (

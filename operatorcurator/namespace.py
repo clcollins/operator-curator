@@ -1,9 +1,31 @@
-import requests
+"""
+This module creates Namespace objects as the top-level object in the
+curation process.
+"""
+
 import logging
-from .__main__ import SOURCE_NAMESPACES, _url
+import requests
+from .__main__ import _url
 from .package import Package
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
+
+
+def list_operators(self):
+    """
+    Accepts a namespace and returns
+    a list of operators in the namespace.
+    """
+    response = requests.get(self.operators_url)
+    if response.ok:
+        operator_list = [
+            str(item['name']) for item in response.json()
+        ]
+        return operator_list
+
+    logging.debug(f"No operators found for {self.name}")
+    return None
+
 
 class Namespace:
     """
@@ -43,22 +65,3 @@ class Namespace:
 
             # Delete the packge object when we're done, to save memory
             del pkg
-
-
-
-
-
-def list_operators(self):
-    """
-    Accepts a namespace and returns
-    a list of operators in the namespace.
-    """
-    response = requests.get(self.operators_url)
-    if response.ok:
-        operator_list = [
-            str(item['name']) for item in response.json()
-        ]
-        return operator_list
-
-    logging.debug(f"No operators found for {self.name}")
-    return None

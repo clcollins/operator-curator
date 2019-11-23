@@ -1,3 +1,9 @@
+"""
+Contains all the validation tests for specific object types, to aggregate
+them into one place.
+"""
+
+
 def validate_csv(csv):
     """
     Validates a specific clusterServiceVersion object against curation
@@ -6,19 +12,24 @@ def validate_csv(csv):
 
     tests = {}
 
-    tests['requires clusterPermissions'] = (
-        True if csv.requires_cluster_permissions else False)
+    tests['requires clusterPermissions'] = bool(
+        csv.requires_cluster_permissions
+    )
 
-    tests['requires securityContextConstraints'] = (
-        True if csv.requires_security_context_constraints else False)
+    tests['requires securityContextConstraints'] = bool(
+        csv.requires_security_context_constraints
+    )
 
-    tests['allows_multinamespace_install_mode'] = (
-        True if csv.allows_multinamespace_install_mode else False)
+    tests['allows multiNamespace installMode'] = bool(
+        csv.allows_multinamespace_install_mode
+    )
 
+    # If any of the above are True, csv is INVALID
     if True in tests.values():
-        return True, tests
+        return False, tests
 
-    return False, tests
+    # Otherwise, csv is OK
+    return True, tests
 
 
 def validate_pacakge_release(release):
@@ -27,9 +38,7 @@ def validate_pacakge_release(release):
     """
 
     tests = {}
-    tests['release has already been curated'] = (
-        True if release.already_curated else False
-    )
+    tests['release has already been curated'] = bool(release.already_curated)
 
     if tests['release has already been curated']:
         return True, tests
@@ -51,15 +60,13 @@ def validate_package(pkg):
 
     tests = {}
 
-    tests['package is in denied list'] = (
-        True if pkg.is_in_denied_list else False)
+    tests['package is in denied list'] = bool(pkg.is_in_denied_list)
 
-    tests['package is in allowed list'] = (
-        True if pkg.is_in_allowed_list else False)
+    tests['package is in allowed list'] = bool(pkg.is_in_allowed_list)
 
     # If not in either list, it's valid
     if not tests[
-        'package is in allowed list'
+            'package is in allowed list'
     ] and not tests[
         'package is in denied list'
     ]:
@@ -67,7 +74,7 @@ def validate_package(pkg):
 
     # If only in allowed list, it's valid
     if tests[
-        'package is in allowed list'
+            'package is in allowed list'
     ] and not tests[
         'package is in denied list'
     ]:
