@@ -62,7 +62,8 @@ confidence=
 # --disable=W".
 
 # Eventually remove `redefined-outer-name`
-disable=print-statement,
+disable=fixme,
+        print-statement,
         logging-format-interpolation,
         parameter-unpacking,
         unpacking-in-except,
