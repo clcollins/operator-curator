@@ -1,18 +1,29 @@
-import json
-import yaml
+"""
+Test cases for classes in the packages module.
+"""
 
 import unittest
 from unittest.mock import patch
 
+import yaml
 from operatorcurator import package, namespace
 
+
 class TestPackages(unittest.TestCase):
+    """
+    Contains test for the Package class.
+    """
+
     def get_test_yaml(self, yaml_file):
-        with open(yaml_file, 'r') as f:
-            test_yaml = yaml.safe_load(f)
+        """
+        Open and retrieve some yaml from the test data to use for
+        these tests.
+        """
+
+        with open(yaml_file, 'r') as yaml_data:
+            test_yaml = yaml.safe_load(yaml_data)
 
         return test_yaml
-
 
     def test_extract_yaml_data(self):
         """
@@ -44,13 +55,12 @@ class TestPackages(unittest.TestCase):
             )
         )
 
+    # TODO: Figure out why this isn't working
+    def test_init_csvs_from_contents(self):
+        """
+        Tests loading a list of csvs from a list of {name:data} dicts.
+        """
 
-# TODO: Figure out why this isn't working
-#    def test_init_csvs_from_contents(self):
-#        """
-#        Tests loading a list of csvs from a list of {name:data} dicts.
-#        """
-#
 #        with open('test/data/example_bundle_tarball.tgz', 'rb') as data:
 #            yaml_files = package.extract_yaml_data(data)
 #
@@ -73,14 +83,12 @@ class TestPackages(unittest.TestCase):
 #        self.assertEqual(csvs[1].name, "crwoperator.v1.2.2")
 #        self.assertEqual(csvs[1].version, '1.2.0')
 
-
     def test_package_release_init(self):
         """
         Tests the initialization of a PackageRelease object.
         """
 
         # TODO:  Needs mock for download_release
-        pass
 
         # Example testing with live Quay.io request:
         #
@@ -97,7 +105,6 @@ class TestPackages(unittest.TestCase):
         # self.assertEqual(pkg.csvs[0].name, 'crwoperator.v1.2.0')
         # self.assertFalse(pkg.csvs[0].requires_cluster_permissions)
 
-
     def test_package_release_download_release(self):
         """
         Tests the response from the function downloading the package
@@ -105,8 +112,6 @@ class TestPackages(unittest.TestCase):
         """
 
         # TODO: Needs mock for requests
-        pass
-
 
     def test_check_package_in_allowed_list(self):
         """
@@ -115,8 +120,6 @@ class TestPackages(unittest.TestCase):
         """
 
         # TODO
-        pass
-
 
     def test_check_package_in_denied_list(self):
         """
@@ -125,15 +128,20 @@ class TestPackages(unittest.TestCase):
         """
 
         # TODO
-        pass
-
 
     def test_package_init(self):
         """
         Tests initialization of the package object.
         """
-        with patch.object(namespace.Namespace, "__init__", lambda x, y: None):
-            mock_namespace = namespace.Namespace('redhat-operators')
+        with patch.object(
+                namespace.Namespace,
+                "__init__",
+                lambda w, x, y: None
+        ):
+            mock_namespace = namespace.Namespace(
+                'redhat-operators',
+                []
+            )
             mock_namespace.name = 'redhat-operators'
 
             pkg = package.Package(
@@ -151,7 +159,6 @@ class TestPackages(unittest.TestCase):
             self.assertTrue(pkg.is_in_allowed_list)
             self.assertFalse(pkg.is_in_denied_list)
 
-
     def test_init_package_release_from_json(self):
         """
         Tests that a list of PackageReleases are returned when
@@ -168,8 +175,6 @@ class TestPackages(unittest.TestCase):
 
         # This is a dumb test - just an example placeholder
         # self.assertTrue(release_list)
-        pass
-
 
     def test_get_release_data(self):
         """
@@ -178,5 +183,67 @@ class TestPackages(unittest.TestCase):
         """
 
         # TODO: Needs mock for requests
-        pass
 
+    def test_get_current_csv_from_package_data(self):
+        """
+        Tests the function that returns the current csv name from
+        an item in the package manifest list.
+        """
+
+        pkg = {
+            'packageName': 'foo',
+            'channels': [
+                {
+                    'name': 'final',
+                    'currentCSV': 'final.v1'
+                }
+            ]
+        }
+
+        csv = package.get_current_csv_from_package_data(pkg)
+        self.assertEqual('final.v1', csv)
+
+        pkg = {
+            'packageName': 'foo',
+            'channels': [
+                {
+                    'name': 'final',
+                    'currentCSV': 'final.v1'
+                },
+                {
+                    'name': 'penultimate'
+                }
+            ]
+        }
+
+        csv = package.get_current_csv_from_package_data(pkg)
+        self.assertEqual('final.v1', csv)
+
+        pkg = {
+            'packageName': 'foo',
+            'channels': [
+                {
+                    'name': 'final',
+                }
+            ]
+        }
+
+        csv = package.get_current_csv_from_package_data(pkg)
+        self.assertIsNone(csv)
+
+        pkg = {
+            'packageName': 'foo',
+            'channels': [
+                {
+                    'name': 'final',
+                    'currentCSV': 'final.v1'
+                },
+                {
+                    'name': 'penultimate',
+                    'currentCSV': 'final.v2'
+                }
+            ]
+        }
+
+        csv = package.get_current_csv_from_package_data(pkg)
+        self.assertRaises(RuntimeError)
