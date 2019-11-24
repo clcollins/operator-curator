@@ -1,10 +1,16 @@
-import unittest
-import json
-import yaml
+"""
+Tests classes in the Namespace module.
+"""
 
-from operatorcurator import namespace
+import unittest
+# from operatorcurator import namespace
+
 
 class TestNamespaces(unittest.TestCase):
+    """
+    Tests for the Namespaces class.
+    """
+
     def test_init(self):
         """
         Tests initialization of a namespace object.
@@ -22,8 +28,10 @@ class TestNamespaces(unittest.TestCase):
         # self.assertGreater(len(ns.operators), 0)
         pass
 
-
     def test_list_operators(self):
+        """
+        Tests the retrieveal of the operators from Quay.io.
+        """
         # TODO: need to mock requests
         #
         # This is how you would do it live
