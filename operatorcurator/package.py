@@ -8,6 +8,7 @@ import requests
 import yaml
 from .__main__ import ALLOWED_PACKAGES, DENIED_PACKAGES, _url
 from .clusterserviceversion import ClusterServiceVersion
+from .channel import Channel
 from .validate import validate_package, validate_pacakge_release
 
 LOGGER = logging.getLogger(__name__)
@@ -19,7 +20,7 @@ def extract_yaml_data(data):
     tar archive represented as tarinfo objects.
     """
     with tarfile.open(fileobj=data) as tar:
-        # Should have a try/except block here, but unsure what
+        # TODO: Should have a try/except block here, but unsure what
         # exceptions may be raised by this
         yaml_files = [
             (
@@ -120,20 +121,12 @@ class Package:
             for release in self.releases:
                 self.release_results.append(
                     {
-                        self.name: {
-                            "version": release.release,
-                            "pass": release.valid,
-                            "skipped": release.already_curated,
-                            "tests": release.tests
-                        }
+                        "version": release.release,
+                        "pass": release.valid,
+                        "skipped": release.already_curated,
+                        "tests": release.tests
                     }
                 )
-
-    def validate(self):
-        """
-        Runs through the list of releases, and gathers the validation
-        results.
-        """
 
     def check_package_in_allowed_list(self):
         """
@@ -165,6 +158,9 @@ class PackageRelease:
         self.name = name
         self.digest = digest
         self.release = release
+        self.package_manifest = []
+        self.csvs = []
+        self.channels = []
 
         logging.debug(f"PackageRelease: {name} - {release}")
 
@@ -184,7 +180,6 @@ class PackageRelease:
         )
 
         if self.already_curated:
-            self.csvs = []
             self.contents = ''
 
             # TODO: Implement this in the report
@@ -199,7 +194,13 @@ class PackageRelease:
                 self.download_release()
             )
 
-            self.csvs = self.init_csvs_from_contents()
+            self.init_csvs_from_contents()
+            if not self.csvs:
+                raise RuntimeError("no csvs for release",
+                    self.name,
+                    self.release)
+            for channel in self.channels:
+                channel.repackage_and_validate()
 
         self.valid, self.tests = validate_pacakge_release(self)
         if self.valid:
@@ -304,28 +305,73 @@ class PackageRelease:
         Takes a list of tarinfo files, and searches for
         clusterServiceVersions in them.
         """
-        csv_list = []
         for entry in self.contents:
             for _, value in entry.items():
                 item = yaml.safe_load(value)
-                if 'kind' in item.keys():
-                    if item['kind'] == 'ClusterServiceVersion':
-                        # This is a csv
-                        csv_list.append(ClusterServiceVersion(item))
-                if 'channels' in item.keys():
-                    # This is a package manifest
-                    self.package_manifest = item
-
+                # This is a bundle
                 if 'data' in item.keys():
-                    # This is a bundle
-                    if 'clusterServiceVersions' in item['data']:
-                        csv_specs = yaml.safe_load(
-                            item['data']['clusterServiceVersions']
-                        )
-                        self.package_manifest = yaml.safe_load(
-                            item['data']['packages']
-                        )
-                        for csv in csv_specs:
-                            csv_list.append(ClusterServiceVersion(csv))
+                    logging.debug('Discovered Bundle data')
+                    if 'clusterServiceVersions' in item['data'].keys():
+                        self.csvs = [
+                            ClusterServiceVersion(csv) for csv in (
+                                yaml.safe_load(
+                                    item['data']['clusterServiceVersions']
+                                )
+                            )
+                        ]
 
-        return csv_list
+                    if 'customResourceDefinitions' in item['data'].keys():
+                        logging.debug('Discovered customResourceDefinitions')
+                        self.crds = yaml.safe_load(
+                            item['data']['customResourceDefinitions']
+                        )
+
+                    if 'packages' in item['data'].keys():
+                        logging.debug('Discovered package manifest')
+                        self.package_manifest = (
+                            yaml.safe_load(item['data']['packages']))
+
+                # This is a csv manifest
+                else:
+                    self.csvs = []
+                    self.crds = []
+                    if 'kind' in item.keys():
+                        logging.debug('Discovered raw yaml data')
+                        if item['kind'] == 'ClusterServiceVersion':
+                            self.csvs.append(ClusterServiceVersion(item))
+
+                        if item['kind'] == 'customResourceDefinition':
+                            logging.debug(
+                                'Discovered customResourceDefinitions'
+                            )
+                            self.crds.append(item)
+
+                    # The package manifest
+                    if 'channels' in item.keys():
+                        logging.debug('Discovered package manifest')
+                        self.package_manifest = [item]
+
+                # Create the channels
+                if self.package_manifest:
+                    # TODO: Again, assumes only a single package in the
+                    # manifest
+                    for channel in self.package_manifest[0]['channels']:
+                        self.channels.append(Channel(self, channel))
+
+    def single_package_in_manifest(self):
+        """
+        This may not be required, but it's what we've tested up until this
+        point.  Need to validate.  Validate there is only 1 package in the
+        manifest.
+        """
+
+        try:
+            if len(self.package_manifest) == 1:
+                return True
+        except AttributeError as error:
+            print(error)
+            print(self.name)
+            print(self.contents)
+            raise
+
+        return False

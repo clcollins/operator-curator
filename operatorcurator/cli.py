@@ -1,11 +1,17 @@
-import sys
+"""
+A CLI interface to operator-curator.
+"""
+
 import argparse
 import logging
+import logging.config
+
 from .__main__ import SOURCE_NAMESPACES
 from .namespace import Namespace
 from .summary import Summary
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
+
 
 def main():
     """
@@ -39,13 +45,13 @@ def main():
 
     args = parser.parse_args()
 
-    import logging.config
-    loglevel= getattr(logging, args.log_level.upper(), None)
-    logging.basicConfig(level=loglevel)
+    logging.basicConfig(
+        level=getattr(logging, args.log_level.upper(), None)
+    )
 
-    summary = Summary()
+    report = []
 
     for name in SOURCE_NAMESPACES:
-        Namespace(name, summary)
+        report += (Namespace(name).summary)
 
-    summary.summarize()
+    Summary(report).summarize()

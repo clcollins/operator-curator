@@ -5,14 +5,35 @@ This module summarizes test results and returns a report to stdout.
 import sys
 
 
+def count_versions_by_key(key, report):
+    """
+    Return the count of release versions in a report that contain
+    a specified key.
+    """
+    count = 0
+    for pkg in report:
+        count += len(
+            [
+                [
+                    version for version in value if (
+                        version[key]
+                    )
+                ] for (_, value) in pkg.items()
+            ][0]
+        )
+
+    return count
+
+
 class Summary:
     """
     This class represents a summary object that can be
     used to generate a report.
     """
 
-    def __init__(self):
-        self.report = []
+    def __init__(self, report):
+        self.summary = []
+        self.report = report
 
     def summarize(self, out=sys.stdout):
         """
@@ -24,50 +45,36 @@ class Summary:
         if not self.report:
             raise IndexError()
 
-        report = []
+        passing_count = count_versions_by_key('pass', self.report)
+        skipped_count = count_versions_by_key('skipped', self.report)
+        total_count = count_versions_by_key('version', self.report)
 
-        passing_count = len(
-            [
-                i for i in self.report if {
-                    key: value for (key, value) in i.items() if (
-                        value["pass"]
-                    )
-                }
-            ]
-        )
-        skipped_count = len(
-            [
-                i for i in self.report if {
-                    key: value for (key, value) in i.items() if (
-                        value["skipped"]
-                    )
-                }
-            ]
-        )
+        self.summary = []
 
         # TODO: This should be replaced with a template of some kind
         for i in self.report:
             for operator, info in i.items():
-                operator_result = "[PASS]" if info["pass"] else "[FAIL]"
-                report.append(
-                    f"\n{operator_result} {operator} "
-                    f"version {info['version']}"
-                )
-                for name, result in info["tests"].items():
-                    test_result = (
-                        "[SKIP]" if info["skipped"] else (
-                            "[PASS]" if result else "[FAIL]"))
-                    report.append(f"    {test_result} {name}")
+                for version in info:
+                    version_result = "[PASS]" if version["pass"] else "[FAIL]"
+                    self.summary.append(
+                        f"\n{version_result} {operator} "
+                        f"version {version['version']}"
+                    )
+                    for name, result in version["tests"].items():
+                        test_result = (
+                            "[SKIP]" if version["skipped"] else (
+                                "[PASS]" if result else "[FAIL]"))
+                        self.summary.append(f"    {test_result} {name}")
 
-        report_str = "\n".join(report)
+        summary_output = "\n".join(self.summary)
 
         # Not as readable as printing, but prepping for unittesting
         out.write(
             f"\nValidation Summary\n"
             f"------------------\n"
-            f"{report_str}\n"
+            f"{summary_output}\n"
             f"\n"
             f"Passed Curation: {passing_count - skipped_count}\n"
             f"Already Curated: {skipped_count}\n"
-            f"Failed Curation: {len(self.report) - passing_count}\n"
+            f"Failed Curation: {total_count - passing_count}\n"
         )

@@ -43,12 +43,35 @@ def validate_pacakge_release(release):
     if tests['release has already been curated']:
         return True, tests
 
-    # Extract bundle from yaml, or csv from  yaml
-    # Yaml must be parsable
-    # Get packages from bundle.yaml ?!  <-- what are these
-    # Get csvs from bundledd
-    # Latest CSV doesn't pass curation, Fail
+    # TODO: Validate if this should be true
+    # This is what we have done up to this point
+    tests['only one package in manifest'] = bool(
+        release.single_package_in_manifest()
+    )
 
+    # If any of the above are false, fail
+    if False in tests.values():
+        return False, tests
+
+    # Otherwise the package relase is OK
+    return True, tests
+
+
+def validate_channel(channel):
+    """
+    Validates a specific channel object against curation rules.
+    """
+
+    tests = {}
+    tests['currentCSV passes curation'] = bool(
+        channel.current_csv_valid
+    )
+
+    # If any of the above are false, fail
+    if False in tests.values():
+        return False, tests
+
+    # Otherwise channel is OK
     return True, tests
 
 

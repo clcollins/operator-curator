@@ -32,29 +32,29 @@ class Namespace:
     Represents a Quay.io application registry namespace.
     """
 
-    def __init__(self, name, summary):
+    def __init__(self, name):
         self.name = name
 
         self.operators_url = _url(f"packages?namespace={self.name}")
-        self.operators = list_operators(self)
+        self.operators = []
+        self.summary = []
 
         logging.debug(f"Namespace: {self.name}")
 
         # For operator in list:
-        for package in self.operators:
+        for package in list_operators(self):
             logging.debug(package)
             pkg = Package(self, package)
+            self.operators.append(pkg)
 
             valid, tests = pkg.valid, pkg.tests
 
             if valid:
-                release_results = pkg.release_results
-                for result in release_results:
-                    summary.report.append(result)
+                self.summary.append({pkg.name: pkg.release_results})
             else:
-                summary.report.append(
+                self.summary.append(
                     {
-                        self.name: {
+                        pkg.name: {
                             "version": "all versions",
                             "pass": False,
                             "skipped": False,

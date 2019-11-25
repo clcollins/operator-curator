@@ -87,12 +87,12 @@ class ClusterServiceVersion:
         self.yaml = csv_yaml
 
         self.name = self.yaml['metadata']['name']
-        self.version = self.yaml['spec']['version']
         logging.debug(f"CSV: {self.name}")
 
-        # TODO: Need to figure this out
-        self.is_latest = False
-        logging.debug(f"CSV is_latest: {self.is_latest}")
+        self.version = self.yaml['spec']['version']
+
+        if 'replaces' in self.yaml['spec'].keys():
+            self.replaces = self.yaml['spec']['replaces']
 
         # Check if this CSV requires clusterPermissions
         self.requires_cluster_permissions = (
